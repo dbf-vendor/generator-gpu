@@ -12,11 +12,10 @@ func main() {
 		switch os.Args[i] {
 		case "--generator-general":
 			global.GENERATOR = global.GENERATOR_GENERAL
+			os.Args = append(os.Args[:i], os.Args[i+1:]...) // Remove from args
 		case "--generator-policy":
 			global.GENERATOR = global.GENERATOR_POLICY
-		}
-		if global.GENERATOR > 0 {
-			break
+			os.Args = append(os.Args[:i], os.Args[i+1:]...) // Remove from args
 		}
 	}
 

@@ -5,7 +5,6 @@
 PATH_SCRIPT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 PATH_BUILD="$GOPATH/bin/generator-gpu_release"
-mkdir -p $PATH_BUILD
 
 # Linux
 export GOOS="linux"

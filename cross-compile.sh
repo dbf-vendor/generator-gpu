@@ -1,6 +1,5 @@
 #/bin/bash
 
-# Set the GOPATH if it is not set or if is different when running as another user (sudo)
 # export GOPATH="" 
 
 PATH_SCRIPT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

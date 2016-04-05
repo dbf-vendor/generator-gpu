@@ -147,7 +147,7 @@ func ParseChars(chars string) CharsetInfo {
 			d += string(c)
 		case (64 < c) && (c < 91): // 65 <= upper <= 90
 			u += string(c)
-		case (96 < c) && (c < 123): // 97 <= upper <= 122
+		case (96 < c) && (c < 123): // 97 <= lower <= 122
 			l += string(c)
 		case (31 < c) && (c < 127): // 32 <= printable <= 126
 			s += string(c)

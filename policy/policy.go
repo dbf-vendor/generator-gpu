@@ -403,6 +403,7 @@ func Main() {
 				skipped = true
 				cmd := exec.Command(cracker, append(argHashcat, append(argSkipLimit, base.GetMask(incrementMin, &posMask))...)...)
 				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
 				err := cmd.Run()
 				if err != nil {
 					log.Printf("%s\n", err)
@@ -499,6 +500,7 @@ func Main() {
 				if limit.Cmp(zeroInt) > 0 { // Calculate limit and execute it separately
 					cmd := exec.Command(cracker, append(argHashcat, "-l", limit.String(), strings.Join(mask, ""))...)
 					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
 					err := cmd.Run()
 					if err != nil {
 						log.Printf("%s\n", err)
@@ -552,6 +554,7 @@ func Main() {
 
 			cmd := exec.Command(cracker, append(argHashcat, maskFileName)...)
 			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
 			err = cmd.Run()
 			if err != nil {
 				log.Printf("%s\n", err)
@@ -562,6 +565,7 @@ func Main() {
 	} else {
 		cmd := exec.Command(cracker)
 		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 		err := cmd.Run()
 		if err != nil {
 			log.Printf("%s\n", err)

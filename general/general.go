@@ -248,6 +248,7 @@ func Main() {
 
 				cmd := exec.Command(cracker, append(argHashcat, append(argSkipLimit, strings.Join(maskPos[:incrementMin], ""))...)...)
 				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
 				err := cmd.Run()
 				if err != nil {
 					log.Printf("%s\n", err)
@@ -273,6 +274,7 @@ func Main() {
 
 				cmd := exec.Command(cracker, append(argHashcat, append(argSkipLimit, strings.Join(maskPos[:incrementMax], ""))...)...)
 				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
 				err := cmd.Run()
 				if err != nil {
 					log.Printf("%s\n", err)
@@ -285,6 +287,7 @@ func Main() {
 		for i := incrementMin; i <= incrementMax; i++ {
 			cmd := exec.Command(cracker, append(argHashcat, strings.Join(maskPos[:i], ""))...)
 			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
 			err := cmd.Run()
 			if err != nil {
 				log.Printf("%s\n", err)
@@ -293,6 +296,7 @@ func Main() {
 	} else {
 		cmd := exec.Command(cracker)
 		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 		err := cmd.Run()
 		if err != nil {
 			log.Printf("%s\n", err)
@@ -313,6 +317,7 @@ func getKeyspace(lenMask int) uint64 {
 	var keyspace uint64
 
 	cmd := exec.Command(cracker, append(argHashcat, "--quiet", "--keyspace", strings.Join(maskPos[:lenMask], ""))...)
+	cmd.Stderr = os.Stderr
 
 	cmdOut, err := cmd.StdoutPipe()
 	if err != nil {

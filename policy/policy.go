@@ -583,6 +583,14 @@ func customCharsetLen(customCharset *[]string, charset string) int {
 		return len((*customCharset)[2])
 	case "?4":
 		return len((*customCharset)[3])
+	case "?d":
+		return 10
+	case "?u":
+		return 26
+	case "?l":
+		return 26
+	case "?s":
+		return 33
 	default:
 		return 1
 	}

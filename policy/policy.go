@@ -361,7 +361,8 @@ func Main() {
 				}
 			}
 
-			if skip.Cmp(zeroInt) > 0 { // Calculate proper mask for skip
+			/* Calculate proper mask for skip */
+			if skip.Cmp(zeroInt) > 0 {
 				for l := 0; l < incrementMin; l++ {
 					for ic := 0; ic < 4; ic++ {
 						if base.MaskInfo[l].Len[base.CHARSETS[ic]] > 0 {
@@ -381,6 +382,7 @@ func Main() {
 				}
 			}
 
+			/* Execute skip and limit */
 			if skip.Cmp(zeroInt) > 0 {
 				var argSkipLimit []string
 
@@ -483,9 +485,8 @@ func Main() {
 									combination.Mul(combination, big.NewInt(int64(base.MaskInfo[j].Len[maskCharset[j][maskPos[j]]])))
 								}
 								if limit.Cmp(combination) < 0 { // Calculate limit and execute it separately
-									l = 0 // Break parent loop
-									incrementMax = i
-									i++ // Break parent of parent loop
+									l = 0                // Break parent loop
+									i = incrementMax + 1 // Break parent of parent loop
 									break
 								} else { // Is in limit range
 									maskWriter.WriteString(strings.Join(mask, "") + "\n")

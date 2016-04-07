@@ -381,11 +381,10 @@ func Main() {
 				}
 			}
 
-			var argSkipLimit []string
-			var keyspace uint64 = 0
-
 			if skip.Cmp(zeroInt) > 0 {
-				keyspace = getKeyspace(base.GetMask(incrementMin, &posMask))
+				var argSkipLimit []string
+
+				keyspace := getKeyspace(base.GetMask(incrementMin, &posMask))
 
 				skip.Mul(skip, big.NewInt(0).SetUint64(keyspace))
 				skipFloat := big.NewFloat(0).SetInt(skip)
@@ -393,45 +392,45 @@ func Main() {
 				skipFloat.Int(skip) // Round down
 				if skip.Cmp(zeroInt) > 0 {
 					argSkipLimit = append(argSkipLimit, "-s", skip.String())
+					skipped = true
 				}
-			}
 
-			if limit.Cmp(zeroInt) > 0 {
-				if skip.Cmp(zeroInt) > 0 {
-					limit.Add(limit, skip)
+				if limit.Cmp(zeroInt) > 0 {
+					if skip.Cmp(zeroInt) > 0 {
+						limit.Add(limit, skip)
+					}
+					if limit.Cmp(combination) < 0 {
+						limit.Mul(limit, big.NewInt(0).SetUint64(keyspace))
+						limitFloat := big.NewFloat(0).SetInt(limit)
+						limitFloat.Quo(limitFloat, big.NewFloat(0).SetInt(combination))
+						_, acc := limitFloat.Int(limit)
+						if acc == big.Below {
+							limit.Add(limit, big.NewInt(1)) // Round up
+						}
+						if limit.Cmp(zeroInt) > 0 {
+							argSkipLimit = append(argSkipLimit, "-l", limit.String())
+							limit.SetUint64(0) // Limit applied here, do not apply it later
+						}
+
+						incrementMax-- // End execution
+						skipped = true
+					} else if limit.Cmp(combination) == 0 {
+						incrementMax-- // End execution
+						skipped = true
+					} else {
+						limit.Sub(limit, combination)
+					}
 				}
-				if limit.Cmp(combination) < 0 {
-					if keyspace <= 0 { // Keyspace is not calculated before
-						keyspace = getKeyspace(base.GetMask(incrementMin, &posMask))
-					}
 
-					limit.Mul(limit, big.NewInt(0).SetUint64(keyspace))
-					limitFloat := big.NewFloat(0).SetInt(limit)
-					limitFloat.Quo(limitFloat, big.NewFloat(0).SetInt(combination))
-					_, acc := limitFloat.Int(limit)
-					if acc == big.Below {
-						limit.Add(limit, big.NewInt(1)) // Round up
+				if skipped {
+					cmd := exec.Command(cracker, append(argHashcat, append(argSkipLimit, base.GetMask(incrementMin, &posMask))...)...)
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					err := cmd.Run()
+					if err != nil {
+						log.Printf("%s\n", err)
 					}
-					if limit.Cmp(zeroInt) > 0 {
-						argSkipLimit = append(argSkipLimit, "-l", limit.String())
-						limit.SetUint64(0) // Limit applied here, do not apply it later
-					}
-
-					incrementMax-- // End execution
-				} else if limit.Cmp(combination) == 0 {
-					incrementMax-- // End execution
-				} else {
-					limit.Sub(limit, combination)
 				}
-			}
-
-			skipped = true
-			cmd := exec.Command(cracker, append(argHashcat, append(argSkipLimit, base.GetMask(incrementMin, &posMask))...)...)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			err := cmd.Run()
-			if err != nil {
-				log.Printf("%s\n", err)
 			}
 		}
 

@@ -325,6 +325,7 @@ func Main() {
 				}
 
 				if l > incrementMax { // Previus for loop did not reached break, so skip is out of range
+					log.Printf("Skip is out of range!\n")
 					os.Exit(0)
 				}
 			}
@@ -361,8 +362,6 @@ func Main() {
 			}
 
 			if skip.Cmp(zeroInt) > 0 { // Calculate proper mask for skip
-				var argSkipLimit []string
-
 				for l := 0; l < incrementMin; l++ {
 					for ic := 0; ic < 4; ic++ {
 						if base.MaskInfo[l].Len[base.CHARSETS[ic]] > 0 {
@@ -380,34 +379,59 @@ func Main() {
 						}
 					}
 				}
+			}
 
+			var argSkipLimit []string
+			var keyspace uint64 = 0
+
+			if skip.Cmp(zeroInt) > 0 {
+				keyspace = getKeyspace(base.GetMask(incrementMin, &posMask))
+
+				skip.Mul(skip, big.NewInt(0).SetUint64(keyspace))
+				skipFloat := big.NewFloat(0).SetInt(skip)
+				skipFloat.Quo(skipFloat, big.NewFloat(0).SetInt(combination))
+				skipFloat.Int(skip) // Round down
 				if skip.Cmp(zeroInt) > 0 {
 					argSkipLimit = append(argSkipLimit, "-s", skip.String())
 				}
+			}
 
-				if limit.Cmp(zeroInt) > 0 {
-					if skip.Cmp(zeroInt) > 0 {
-						limit.Add(limit, skip)
+			if limit.Cmp(zeroInt) > 0 {
+				if skip.Cmp(zeroInt) > 0 {
+					limit.Add(limit, skip)
+				}
+				if limit.Cmp(combination) < 0 {
+					if keyspace <= 0 { // Keyspace is not calculated before
+						keyspace = getKeyspace(base.GetMask(incrementMin, &posMask))
 					}
-					if limit.Cmp(combination) < 0 {
+
+					limit.Mul(limit, big.NewInt(0).SetUint64(keyspace))
+					limitFloat := big.NewFloat(0).SetInt(limit)
+					limitFloat.Quo(limitFloat, big.NewFloat(0).SetInt(combination))
+					_, acc := limitFloat.Int(limit)
+					if acc == big.Below {
+						limit.Add(limit, big.NewInt(1)) // Round up
+					}
+					if limit.Cmp(zeroInt) > 0 {
 						argSkipLimit = append(argSkipLimit, "-l", limit.String())
-
-						incrementMax-- // End execution
-					} else if limit.Cmp(combination) == 0 {
-						incrementMax-- // End execution
-					} else {
-						limit.Sub(limit, combination)
+						limit.SetUint64(0) // Limit applied here, do not apply it later
 					}
-				}
 
-				skipped = true
-				cmd := exec.Command(cracker, append(argHashcat, append(argSkipLimit, base.GetMask(incrementMin, &posMask))...)...)
-				cmd.Stdout = os.Stdout
-				cmd.Stderr = os.Stderr
-				err := cmd.Run()
-				if err != nil {
-					log.Printf("%s\n", err)
+					incrementMax-- // End execution
+				} else if limit.Cmp(combination) == 0 {
+					incrementMax-- // End execution
+				} else {
+					limit.Sub(limit, combination)
 				}
+			}
+
+			skipped = true
+			cmd := exec.Command(cracker, append(argHashcat, append(argSkipLimit, base.GetMask(incrementMin, &posMask))...)...)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			err := cmd.Run()
+			if err != nil {
+				log.Printf("%s\n", err)
 			}
 		}
 
@@ -498,12 +522,23 @@ func Main() {
 				}
 
 				if limit.Cmp(zeroInt) > 0 { // Calculate limit and execute it separately
-					cmd := exec.Command(cracker, append(argHashcat, "-l", limit.String(), strings.Join(mask, ""))...)
-					cmd.Stdout = os.Stdout
-					cmd.Stderr = os.Stderr
-					err := cmd.Run()
-					if err != nil {
-						log.Printf("%s\n", err)
+					keyspace := getKeyspace(strings.Join(mask, ""))
+
+					limit.Mul(limit, big.NewInt(0).SetUint64(keyspace))
+					limitFloat := big.NewFloat(0).SetInt(limit)
+					limitFloat.Quo(limitFloat, big.NewFloat(0).SetInt(combination))
+					_, acc := limitFloat.Int(limit)
+					if acc == big.Below {
+						limit.Add(limit, big.NewInt(1)) // Round up
+					}
+					if limit.Cmp(zeroInt) > 0 {
+						cmd := exec.Command(cracker, append(argHashcat, "-l", limit.String(), strings.Join(mask, ""))...)
+						cmd.Stdout = os.Stdout
+						cmd.Stderr = os.Stderr
+						err := cmd.Run()
+						if err != nil {
+							log.Printf("%s\n", err)
+						}
 					}
 				}
 			} else { // There is no limit
@@ -598,4 +633,49 @@ func customCharsetLen(customCharset *[]string, charset string) int {
 	default:
 		return 1
 	}
+}
+
+func getKeyspace(mask string) uint64 {
+	var keyspace uint64
+
+	cmd := exec.Command(cracker, append(argHashcat, "--quiet", "--keyspace", mask)...)
+	cmd.Stderr = os.Stderr
+
+	cmdOut, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Printf("%s\n", err)
+		os.Exit(1)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		log.Printf("%s\n", err)
+		os.Exit(1)
+	}
+
+	cmdScanner := bufio.NewScanner(cmdOut)
+	cmdScanner.Split(bufio.ScanLines)
+	for cmdScanner.Scan() {
+		// Get keyspace from line
+		keyspace, err = strconv.ParseUint(cmdScanner.Text(), 10, 64)
+		if err == nil {
+			break // Quit for loop
+		}
+	}
+	err = cmdScanner.Err()
+	if err != nil {
+		log.Printf("%s\n", err)
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		log.Printf("%s\n", err)
+	}
+
+	if keyspace < 1 {
+		log.Printf("keyspace not determined!\n")
+		os.Exit(1)
+	}
+
+	return keyspace
 }

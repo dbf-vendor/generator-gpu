@@ -465,6 +465,12 @@ func Main() {
 			if limit.Cmp(zeroInt) > 0 { // Should apply limit
 				var mask []string
 				for i := incrementMin; i <= incrementMax; i++ {
+					if i > incrementMin {
+						for l := 0; l < i; l++ {
+							maskPos[l] = 0
+						}
+					}
+
 					mask = make([]string, i)
 					for l := 0; l < i; l++ {
 						mask[l] = base.MaskInfo[l].Chars[maskCharset[l][maskPos[l]]]
@@ -543,6 +549,12 @@ func Main() {
 				}
 			} else { // There is no limit
 				for i := incrementMin; i <= incrementMax; i++ {
+					if i > incrementMin {
+						for l := 0; l < i; l++ {
+							maskPos[l] = 0
+						}
+					}
+
 					mask := make([]string, i)
 					for l := 0; l < i; l++ {
 						mask[l] = base.MaskInfo[l].Chars[maskCharset[l][maskPos[l]]]
